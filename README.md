@@ -1,7 +1,7 @@
 
 # Employee Frontend Application
 
-A professional React-based Employee Management System frontend built with modern technologies and best practices. This application provides a comprehensive interface for managing employee data, analytics, and system settings.
+A professional React-based Employee Management System frontend built with modern technologies and best practices. This application provides a comprehensive interface for managing employee data with PostgreSQL backend integration, analytics, and system settings.
 
 ## 🚀 Features
 
@@ -9,6 +9,7 @@ A professional React-based Employee Management System frontend built with modern
 - **Employee Management**: Search, filter, and view employee information
 - **Analytics**: Visual insights with charts and graphs
 - **Settings**: System configuration and preferences
+- **PostgreSQL Integration**: Designed to work with Node.js PostgreSQL backend
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **Modern UI**: Built with Tailwind CSS and shadcn/ui components
 
@@ -24,6 +25,7 @@ A professional React-based Employee Management System frontend built with modern
 - **Icons**: Lucide React
 - **Process Management**: PM2
 - **Web Server**: NGINX (reverse proxy)
+- **Backend**: Node.js with PostgreSQL (separate repository)
 
 ## 📋 Prerequisites
 
@@ -33,6 +35,7 @@ Before installing the application, ensure you have:
 - Sudo privileges on the system
 - Internet connection for downloading packages
 - A domain name (optional, for production setup)
+- PostgreSQL backend API running (separate service)
 
 ## 🔧 Installation
 
@@ -127,15 +130,45 @@ pm2 monit
 # Install dependencies
 npm install
 
-# Start development server
+# Start development server (runs on port 8080)
 npm run dev
 
 # Build for production
 npm run build
 
-# Preview production build
+# Preview production build (runs on port 3001)
 npm run preview
 ```
+
+## 🗄️ PostgreSQL Backend Integration
+
+This frontend is designed to work with a Node.js PostgreSQL backend. The application expects the following API endpoints:
+
+### Employee API Endpoints
+- `GET /api/employees` - Fetch all employees
+- `GET /api/employees/:id` - Fetch single employee
+- `POST /api/employees` - Create new employee
+- `PUT /api/employees/:id` - Update employee
+- `DELETE /api/employees/:id` - Delete employee
+
+### Expected Employee Data Structure
+```json
+{
+  "id": "number",
+  "name": "string",
+  "email": "string",
+  "phone": "string",
+  "department": "string",
+  "position": "string",
+  "location": "string",
+  "joinDate": "string (ISO date)",
+  "status": "active | inactive"
+}
+```
+
+### Dashboard API Endpoints
+- `GET /api/dashboard/stats` - Get employee statistics
+- `GET /api/dashboard/analytics` - Get analytics data
 
 ## 🌐 NGINX Configuration
 
@@ -195,21 +228,29 @@ employee-frontend/
 Create a `.env.local` file for local development:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8000/api
+VITE_API_BASE_URL=http://localhost:5000/api
 VITE_APP_NAME=Employee Management System
 VITE_APP_VERSION=1.0.0
 ```
 
+For production, update the API base URL to point to your PostgreSQL backend server.
+
 ### API Integration
 
-Update the API endpoints in your components to point to your backend server. The application is designed to consume REST APIs and can be easily integrated with any backend technology.
+The application uses TanStack Query for data fetching. Update the API endpoints in your components to match your PostgreSQL backend:
 
-### Customization
+```typescript
+// Example API configuration
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-- **Branding**: Update colors and logos in `src/index.css` and components
-- **API Endpoints**: Modify API calls in components to match your backend
-- **Features**: Add or remove pages and components as needed
-- **Styling**: Customize the Tailwind CSS configuration in `tailwind.config.ts`
+export const fetchEmployees = async () => {
+  const response = await fetch(`${API_BASE_URL}/employees`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch employees');
+  }
+  return response.json();
+};
+```
 
 ## 🔍 Monitoring and Logging
 
@@ -255,10 +296,10 @@ pm2 set pm2-logrotate:retain 30
    sudo systemctl reload nginx
    ```
 
-4. **Permission issues**:
-   ```bash
-   sudo chown -R $USER:$USER /var/www/employee-frontend
-   ```
+4. **API connection issues**:
+   - Verify PostgreSQL backend is running
+   - Check API endpoint URLs in environment variables
+   - Review CORS settings in backend
 
 ### Health Checks
 
@@ -299,6 +340,21 @@ sudo tar -czf /backup/employee-frontend-$(date +%Y%m%d).tar.gz /var/www/employee
 sudo cp /etc/nginx/sites-available/employee-frontend /backup/
 ```
 
+## 🎯 Performance Optimization
+
+### Frontend Optimizations
+- Bundle splitting with Vite
+- Lazy loading of components
+- Image optimization
+- CSS minification
+- Gzip compression via NGINX
+
+### API Optimization
+- Implement pagination for large datasets
+- Use React Query for caching
+- Debounce search inputs
+- Optimize PostgreSQL queries in backend
+
 ## 📞 Support
 
 For issues and questions:
@@ -306,20 +362,21 @@ For issues and questions:
 1. Check the logs: `pm2 logs employee-frontend`
 2. Verify NGINX configuration: `sudo nginx -t`
 3. Check system resources: `htop` or `pm2 monit`
-4. Review the installation script output
+4. Verify PostgreSQL backend connectivity
+5. Review the installation script output
 
 ## 📄 License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the MIT License.
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test thoroughly
+4. Test thoroughly with PostgreSQL backend
 5. Submit a pull request
 
 ---
 
-**Note**: This is a frontend application that requires a separate backend API. Make sure to update the API endpoints in the application settings to point to your actual backend server.
+**Note**: This frontend application requires a separate Node.js PostgreSQL backend. Make sure your backend API is running and accessible before starting the frontend application.

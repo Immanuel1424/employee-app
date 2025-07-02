@@ -16,6 +16,7 @@ module.exports = {
     error_file: '/var/log/pm2/employee-frontend-error.log',
     out_file: '/var/log/pm2/employee-frontend-out.log',
     log_file: '/var/log/pm2/employee-frontend-combined.log',
-    time: true
+    time: true,
+    log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
   }]
 };
