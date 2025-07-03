@@ -1,0 +1,69 @@
+name: First-Time Deploy Fullstack App via SSM
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v3
+
+      - name: 📦 Zip deployment files
+        run: |
+          mkdir -p deploy-package
+          cp -r employee-app deploy-package/
+          cd deploy-package && zip -r ../employee-frontend.zip .
+
+      - name: ☁️ Upload to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --acl private
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_S3_BUCKET: ${{ secrets.S3_BUCKET_NAME }}
+          SOURCE_DIR: .
+          DEST_DIR: deployment/employee-frontend/
+
+      - name: 🚀 SSM Deploy Script (Frontend Setup)
+        run: |
+          export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+          export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          export AWS_REGION=${{ secrets.AWS_REGION }}
+
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=InstanceIds,Values=${{ secrets.EC2_INSTANCE_ID }}" \
+            --region ${{ secrets.AWS_REGION }} \
+            --comment "Frontend App Deployment via SSM" \
+            --parameters commands='[
+              "sudo apt update && sudo apt upgrade -y",
+              "curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -",
+              "sudo apt install -y nodejs build-essential nginx",
+              "sudo npm install -g pm2",
+              "sudo mkdir -p /var/www/employee-frontend",
+              "sudo chown -R $USER:$USER /var/www/employee-frontend",
+              "aws s3 cp s3://${{ secrets.S3_BUCKET_NAME }}/deployment/employee-frontend/employee-frontend.zip /tmp/employee-frontend.zip",
+              "unzip -o /tmp/employee-frontend.zip -d /tmp/employee-app",
+              "cp -r /tmp/employee-app/employee-app/. /var/www/employee-frontend/",
+              "cd /var/www/employee-frontend",
+              "npm install",
+              "npm run build",
+              "pm2 start ecosystem.config.cjs",
+              "pm2 save",
+              "pm2 startup",
+              "sudo cp nginx.conf /etc/nginx/sites-available/employee-frontend",
+              "sudo ln -s /etc/nginx/sites-available/employee-frontend /etc/nginx/sites-enabled/",
+              "sudo rm -f /etc/nginx/sites-enabled/default",
+              "sudo nginx -t",
+              "sudo systemctl restart nginx"
+            ]' \
+            --timeout-seconds 1200 \
+            --max-concurrency "1" \
+            --max-errors "1" \
+            --cloud-watch-output-config '{"CloudWatchOutputEnabled":true}'
