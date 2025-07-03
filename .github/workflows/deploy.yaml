@@ -1,4 +1,4 @@
-name: First-Time Deploy Fullstack App via SSM
+name: First-Time Deploy Frontend via SSM
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
           mkdir -p deploy-package
           shopt -s extglob
           cp -r !(deploy-package) deploy-package/
-          cd deploy-package && zip -r ../employee-frontend.zip .
+          cd deploy-package && zip -r ../employee-frontend-deploy.zip .
 
       - name: ☁️ Upload to S3
         uses: jakejarvis/s3-sync-action@master
@@ -44,14 +44,18 @@ jobs:
             --comment "Frontend App Deployment via SSM" \
             --parameters commands='[
               "sudo apt update && sudo apt upgrade -y",
+              "sudo apt install -y unzip curl",
+              "curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip",
+              "unzip -o awscliv2.zip",
+              "sudo ./aws/install",
               "curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -",
               "sudo apt install -y nodejs build-essential nginx",
               "sudo npm install -g pm2",
               "sudo mkdir -p /var/www/employee-frontend",
               "sudo chown -R $USER:$USER /var/www/employee-frontend",
-              "aws s3 cp s3://${{ secrets.S3_BUCKET_NAME }}/deployment/employee-frontend/employee-frontend.zip /tmp/employee-frontend.zip",
-              "unzip -o /tmp/employee-frontend.zip -d /tmp/employee-app",
-              "cp -r /tmp/employee-app/employee-app/. /var/www/employee-frontend/",
+              "aws s3 cp s3://${{ secrets.S3_BUCKET_NAME }}/deployment/employee-frontend/employee-frontend-deploy.zip /tmp/employee-frontend-deploy.zip",
+              "unzip -o /tmp/employee-frontend-deploy.zip -d /tmp/employee-frontend",
+              "cp -r /tmp/employee-frontend/. /var/www/employee-frontend/",
               "cd /var/www/employee-frontend",
               "npm install",
               "npm run build",
