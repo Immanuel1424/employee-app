@@ -15,7 +15,7 @@ jobs:
       - name: 📦 Zip deployment files
         run: |
           mkdir -p deploy-package
-          cp -r employee-app deploy-package/
+          cp -r . deploy-package/
           cd deploy-package && zip -r ../employee-frontend.zip .
 
       - name: ☁️ Upload to S3
