@@ -15,21 +15,17 @@ jobs:
       - name: 📦 Zip deployment files
         run: |
           mkdir -p deploy-package
-          shopt -s extglob
-          cp -r !(deploy-package) deploy-package/
-          cd deploy-package && zip -r ../employee-frontend-deploy.zip .
+          cp -r employee/client/* deploy-package/
+          cd deploy-package
+          zip -r ../employee-frontend-deploy.zip .
 
       - name: ☁️ Upload to S3
-        uses: jakejarvis/s3-sync-action@master
-        with:
-          args: --acl private
+        run: |
+          aws s3 cp employee-frontend-deploy.zip s3://${{ secrets.S3_BUCKET_NAME }}/deployment/employee-frontend/employee-frontend-deploy.zip
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_S3_BUCKET: ${{ secrets.S3_BUCKET_NAME }}
-          SOURCE_DIR: .
-          DEST_DIR: deployment/employee-frontend/
 
       - name: 🚀 SSM Deploy Script (Frontend Setup)
         run: |
