@@ -15,9 +15,10 @@ jobs:
       - name: 📦 Prepare deployment package
         run: |
           mkdir -p deploy-package
-          shopt -s dotglob
-          cp -r * deploy-package/
-          zip -r employee-frontend-deploy.zip deploy-package
+          shopt -s dotglob extglob
+          cp -r !(deploy-package|.git|node_modules) deploy-package/
+          cd deploy-package
+          zip -r ../employee-frontend-deploy.zip
 
       - name: ☁️ Upload to S3
         run: |
