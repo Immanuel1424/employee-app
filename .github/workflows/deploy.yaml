@@ -12,12 +12,12 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v3
 
-      - name: 📦 Zip deployment files
+      - name: 📦 Prepare deployment package
         run: |
           mkdir -p deploy-package
-          cp -r employee/client/* deploy-package/
-          cd deploy-package
-          zip -r ../employee-frontend-deploy.zip .
+          shopt -s dotglob
+          cp -r * deploy-package/
+          zip -r employee-frontend-deploy.zip deploy-package
 
       - name: ☁️ Upload to S3
         run: |
@@ -51,7 +51,7 @@ jobs:
               "sudo chown -R $USER:$USER /var/www/employee-frontend",
               "aws s3 cp s3://${{ secrets.S3_BUCKET_NAME }}/deployment/employee-frontend/employee-frontend-deploy.zip /tmp/employee-frontend-deploy.zip",
               "unzip -o /tmp/employee-frontend-deploy.zip -d /tmp/employee-frontend",
-              "cp -r /tmp/employee-frontend/. /var/www/employee-frontend/",
+              "cp -r /tmp/employee-frontend/deploy-package/. /var/www/employee-frontend/",
               "cd /var/www/employee-frontend",
               "npm install",
               "npm run build",
